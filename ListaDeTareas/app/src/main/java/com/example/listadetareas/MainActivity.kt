@@ -1,10 +1,16 @@
 package com.example.listadetareas
 
 import android.os.Bundle
+import android.widget.ArrayAdapter
+import android.widget.EditText
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.edit
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.listadetareas.databinding.ActivityMainBinding
+import org.json.JSONArray
+import org.json.JSONObject
 
 class MainActivity : AppCompatActivity() {
 
@@ -13,26 +19,37 @@ class MainActivity : AppCompatActivity() {
     private lateinit var adapter: TareaAdapter
     private var contadorId = 0
 
+    companion object {
+        private const val PREFS_NAME = "tareas_prefs"
+        private const val KEY_TAREAS = "tareas_json"
+        private const val KEY_CONTADOR = "contador_id"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        cargarDatos()
+        configurarSpinnerCategorias()
         configurarRecyclerView()
         configurarBotones()
-        actualizarContador() // Inicializar el contador en 0
+        actualizarContador()
     }
 
     private fun configurarRecyclerView() {
-        // TODO 1: Crear el adapter pasando listaTareas y una lambda para eliminar
-        adapter = TareaAdapter(listaTareas) { posicion ->
-            eliminarTarea(posicion)
-        }
+        adapter = TareaAdapter(
+            tareas = listaTareas,
+            onEliminar = { posicion -> eliminarTarea(posicion) },
+            onCambioCompletada = {
+                actualizarContador()
+                guardarDatos()
+            },
+            onEditarTitulo = { posicion -> mostrarDialogoEditarTitulo(posicion) }
+        )
 
-        // TODO 2: Asignar un LinearLayoutManager al RecyclerView
         binding.rvTareas.layoutManager = LinearLayoutManager(this)
 
-        // TODO 3: Asignar el adapter al RecyclerView
         binding.rvTareas.adapter = adapter
     }
 
@@ -40,7 +57,8 @@ class MainActivity : AppCompatActivity() {
         binding.btnAgregar.setOnClickListener {
             val texto = binding.etNuevaTarea.text.toString().trim()
             if (texto.isNotEmpty()) {
-                agregarTarea(texto)
+                val categoriaSeleccionada = binding.spCategoria.selectedItem.toString()
+                agregarTarea(texto, categoriaSeleccionada)
                 binding.etNuevaTarea.text.clear()
             } else {
                 Toast.makeText(this, "Escribe una tarea primero", Toast.LENGTH_SHORT).show()
@@ -48,40 +66,111 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun agregarTarea(titulo: String) {
-        // TODO 4: Incrementar contadorId
+    private fun configurarSpinnerCategorias() {
+        val categorias = resources.getStringArray(R.array.categorias_tarea)
+        val spinnerAdapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            categorias
+        )
+        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.spCategoria.adapter = spinnerAdapter
+    }
+
+    private fun agregarTarea(titulo: String, categoria: String) {
         contadorId++
 
-        // TODO 5: Crear una nueva Tarea con el id y titulo
-        val nuevaTarea = Tarea(id = contadorId, titulo = titulo)
+        val nuevaTarea = Tarea(id = contadorId, titulo = titulo, categoria = categoria)
 
-        // TODO 6: Agregarla a listaTareas
         listaTareas.add(nuevaTarea)
 
-        // TODO 7: Notificar al adapter
         adapter.notifyItemInserted(listaTareas.size - 1)
 
-        // TODO 8: Llamar a actualizarContador()
         actualizarContador()
+        guardarDatos()
     }
 
     private fun eliminarTarea(posicion: Int) {
-        // TODO 9: Remover la tarea en la posición dada
         listaTareas.removeAt(posicion)
 
-        // TODO 10: Notificar al adapter
         adapter.notifyItemRemoved(posicion)
         adapter.notifyItemRangeChanged(posicion, listaTareas.size)
 
-        // TODO 11: Llamar a actualizarContador()
         actualizarContador()
+        guardarDatos()
+    }
+
+    private fun mostrarDialogoEditarTitulo(posicion: Int) {
+        val tarea = listaTareas[posicion]
+        val input = EditText(this).apply {
+            setText(tarea.titulo)
+            setSelection(tarea.titulo.length)
+            hint = getString(R.string.hint_editar_titulo)
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.titulo_editar_tarea)
+            .setView(input)
+            .setPositiveButton(R.string.guardar) { _, _ ->
+                val nuevoTitulo = input.text.toString().trim()
+                if (nuevoTitulo.isEmpty()) {
+                    Toast.makeText(this, R.string.error_titulo_vacio, Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+
+                tarea.titulo = nuevoTitulo
+                adapter.notifyItemChanged(posicion)
+                guardarDatos()
+            }
+            .setNegativeButton(R.string.cancelar, null)
+            .show()
     }
 
     private fun actualizarContador() {
-        // TODO 12: Contar cuántas tareas tienen completada == false
         val pendientes = listaTareas.count { !it.completada }
 
-        // TODO 13: Actualizar binding.tvContador.text
         binding.tvContador.text = "$pendientes tareas pendientes"
+    }
+
+    private fun guardarDatos() {
+        val tareasJson = JSONArray()
+        listaTareas.forEach { tarea ->
+            val obj = JSONObject().apply {
+                put("id", tarea.id)
+                put("titulo", tarea.titulo)
+                put("categoria", tarea.categoria)
+                put("completada", tarea.completada)
+            }
+            tareasJson.put(obj)
+        }
+
+        getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit {
+            putString(KEY_TAREAS, tareasJson.toString())
+            putInt(KEY_CONTADOR, contadorId)
+        }
+    }
+
+    private fun cargarDatos() {
+        val prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        contadorId = prefs.getInt(KEY_CONTADOR, 0)
+
+        val tareasString = prefs.getString(KEY_TAREAS, null) ?: return
+        try {
+            val tareasJson = JSONArray(tareasString)
+            listaTareas.clear()
+
+            for (i in 0 until tareasJson.length()) {
+                val obj = tareasJson.getJSONObject(i)
+                val tarea = Tarea(
+                    id = obj.optInt("id", 0),
+                    titulo = obj.optString("titulo", ""),
+                    categoria = obj.optString("categoria", "Personal"),
+                    completada = obj.optBoolean("completada", false)
+                )
+                listaTareas.add(tarea)
+            }
+        } catch (_: Exception) {
+            listaTareas.clear()
+        }
     }
 }

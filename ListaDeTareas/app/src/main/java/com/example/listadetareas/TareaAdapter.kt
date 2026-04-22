@@ -8,7 +8,9 @@ import com.example.listadetareas.databinding.ItemTareaBinding
 
 class TareaAdapter(
     private val tareas: MutableList<Tarea>,
-    private val onEliminar: (Int) -> Unit
+    private val onEliminar: (Int) -> Unit,
+    private val onCambioCompletada: () -> Unit,
+    private val onEditarTitulo: (Int) -> Unit
 ) : RecyclerView.Adapter<TareaAdapter.TareaViewHolder>() {
 
     // Cambiado a 'class' simple (sin inner) por mejores prácticas
@@ -26,6 +28,10 @@ class TareaAdapter(
         val tarea = tareas[position]
 
         holder.binding.tvTitulo.text = tarea.titulo
+        holder.binding.tvCategoria.text = tarea.categoria
+
+        // Limpiamos el listener previo para evitar disparos al reutilizar la celda.
+        holder.binding.cbCompletada.setOnCheckedChangeListener(null)
         holder.binding.cbCompletada.isChecked = tarea.completada
 
         // Aplicar estilo inicial
@@ -35,14 +41,21 @@ class TareaAdapter(
         holder.binding.cbCompletada.setOnCheckedChangeListener { _, isChecked ->
             tarea.completada = isChecked
             actualizarEstiloTexto(holder, isChecked)
+            onCambioCompletada()
         }
 
         // Listener del botón eliminar
         holder.binding.btnEliminar.setOnClickListener {
-            // Usamos bindingAdapterPosition para obtener la posición actual correcta
-            val currentPosition = holder.bindingAdapterPosition
+            val currentPosition = holder.adapterPosition
             if (currentPosition != RecyclerView.NO_POSITION) {
                 onEliminar(currentPosition)
+            }
+        }
+
+        holder.binding.btnEditar.setOnClickListener {
+            val currentPosition = holder.adapterPosition
+            if (currentPosition != RecyclerView.NO_POSITION) {
+                onEditarTitulo(currentPosition)
             }
         }
     }

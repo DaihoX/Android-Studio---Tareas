@@ -9,7 +9,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Mis Tareas"
+        android:text="@string/titulo_mis_tareas"
         android:textSize="28sp"
         android:textStyle="bold"
         android:layout_marginBottom="16dp" />
@@ -25,7 +25,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:hint="Escribe una tarea..."
+            android:hint="@string/hint_nueva_tarea"
             android:inputType="text"
             android:imeOptions="actionDone" />
 
@@ -33,15 +33,21 @@
             android:id="@+id/btnAgregar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Agregar"
+            android:text="@string/agregar"
             android:layout_marginStart="8dp" />
     </LinearLayout>
+
+    <Spinner
+        android:id="@+id/spCategoria"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp" />
 
     <TextView
         android:id="@+id/tvContador"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="0 tareas pendientes"
+        android:text="@string/contador_pendientes_inicial"
         android:textSize="14sp"
         android:textColor="#666666"
         android:layout_marginBottom="8dp" />

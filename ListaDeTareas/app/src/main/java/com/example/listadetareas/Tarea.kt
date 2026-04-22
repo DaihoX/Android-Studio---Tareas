@@ -2,6 +2,7 @@ package com.example.listadetareas
 
 data class Tarea(
     val id: Int,
-    val titulo: String,
+    var titulo: String,
+    var categoria: String = "Personal",
     var completada: Boolean = false
 )

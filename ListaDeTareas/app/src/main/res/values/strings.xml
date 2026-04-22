@@ -1,3 +1,20 @@
 <resources>
     <string name="app_name">ListaDeTareas</string>
+    <string name="titulo_mis_tareas">Mis Tareas</string>
+    <string name="hint_nueva_tarea">Escribe una tarea...</string>
+    <string name="agregar">Agregar</string>
+    <string name="contador_pendientes_inicial">0 tareas pendientes</string>
+    <string name="editar_tarea">Editar tarea</string>
+    <string name="eliminar_tarea">Eliminar tarea</string>
+    <string name="titulo_editar_tarea">Editar tarea</string>
+    <string name="hint_editar_titulo">Nuevo titulo</string>
+    <string name="guardar">Guardar</string>
+    <string name="cancelar">Cancelar</string>
+    <string name="error_titulo_vacio">El titulo no puede estar vacio</string>
+
+    <string-array name="categorias_tarea">
+        <item>Trabajo</item>
+        <item>Personal</item>
+        <item>Estudio</item>
+    </string-array>
 </resources>
